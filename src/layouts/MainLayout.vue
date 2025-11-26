@@ -6,6 +6,16 @@
 
         <q-toolbar-title> Hello Worga!! </q-toolbar-title>
 
+        <q-btn
+          flat
+          dense
+          round
+          :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
+          @click="$q.dark.toggle()"
+        >
+          <q-tooltip>切換深色/淺色模式</q-tooltip>
+        </q-btn>
+
         <div>Quasar v{{ $q.version }}</div>
       </q-toolbar>
     </q-header>
@@ -32,46 +42,16 @@ import WeatherAnimation from 'components/WeatherAnimation.vue';
 
 const linksList: EssentialLinkProps[] = [
   {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
+    title: 'E-mail',
+    caption: '聯繫我',
+    icon: 'mail',
+    link: 'mailto:gagshuang1130@gmail.com',
   },
   {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev',
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev',
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev',
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev',
-  },
-  {
-    title: 'Github (NoobToTheBone)',
-    caption: '努力新增中...',
+    title: 'Github (MitsukoH)',
+    caption: 'github.com/MitsukoH',
     icon: 'fa-brands fa-github',
-    link: 'https://github.com/NoobToTheBone',
+    link: 'https://github.com/MitsukoH',
   },
 ];
 

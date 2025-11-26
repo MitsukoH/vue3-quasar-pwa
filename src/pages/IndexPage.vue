@@ -1,6 +1,6 @@
 <template>
   <!-- 整頁容器，灰底看起來比較不那麼陽春 -->
-  <q-page padding class="bg-grey-2">
+  <q-page padding :class="$q.dark.isActive ? 'bg-gray-9' : 'bg-grey-2'">
     <!-- 🌅 問候區 -->
     <div class="row items-center q-mb-xs">
       <div class="text-h5">嗨，{{ userStore.userName }} 👋</div>
