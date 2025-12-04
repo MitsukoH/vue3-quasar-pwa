@@ -1,7 +1,7 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
-      <q-toolbar>
+      <q-toolbar :class="$q.dark.isActive ? 'custom-dark ' : 'custom-light '">
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title> Hello Worga!! </q-toolbar-title>
@@ -61,3 +61,11 @@ function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
 </script>
+<style scoped>
+.custom-dark {
+  background-color: #9e78f1;
+}
+.custom-light {
+  background-color: #784ae1;
+}
+</style>
