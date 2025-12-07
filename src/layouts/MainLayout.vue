@@ -2,8 +2,6 @@
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
       <q-toolbar :class="$q.dark.isActive ? 'custom-dark ' : 'custom-light '">
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-
         <q-toolbar-title> Hello Worga!! </q-toolbar-title>
 
         <q-btn
@@ -20,7 +18,7 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" bordered>
+    <q-drawer v-model="leftDrawerOpen" bordered show-if-above :mini="miniState" @mouseover="miniState = false" @mouseout="miniState = true">
       <q-list>
         <!-- <q-item-label header>  </q-item-label> -->
 
@@ -55,11 +53,8 @@ const linksList: EssentialLinkProps[] = [
   },
 ];
 
-const leftDrawerOpen = ref(false);
-
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
-}
+const leftDrawerOpen = ref(true);
+const miniState = ref(true);
 </script>
 <style scoped>
 .custom-dark {
