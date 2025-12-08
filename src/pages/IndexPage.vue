@@ -36,34 +36,72 @@
       </q-card>
     </q-dialog>
 
-    <!-- ✅ 待辦清單輸入區 -->
-    <q-card class="q-pa-md q-mb-md">
-      <div class="text-subtitle2 q-mb-sm">新增待辦事項</div>
+    <!-- ✅ 新增待辦事項按鈕 -->
+    <div class="row justify-center q-mb-md">
+      <q-btn
+        color="primary"
+        icon="add"
+        label="新增待辦事項"
+        @click="showAddTaskDialog = true"
+      />
+    </div>
 
-      <!-- 輸入 + 日期 + 優先級 + 新增按鈕 -->
-      <div class="row q-gutter-sm q-mb-sm">
-        <q-input
-          v-model="newTask"
-          label="輸入要做的事"
-          dense
-          outlined
-          class="col"
-          @keyup.enter="addTask"
-        />
-        <q-date v-model="newTaskDate" minimal mask="YYYY-MM-DD" today-btn />
-      </div>
-      <div class="row q-gutter-sm">
-        <q-select
-          v-model="newTaskPriority"
-          :options="priorityOptions"
-          label="優先級"
-          dense
-          outlined
-          style="min-width: 100px"
-        />
-        <q-btn round icon="add" color="primary" :disable="!newTask" @click="addTask" />
-      </div>
-    </q-card>
+    <!-- 📝 新增待辦事項對話框 -->
+    <q-dialog v-model="showAddTaskDialog">
+      <q-card style="min-width: 400px">
+        <q-card-section>
+          <div class="text-h6">新增待辦事項</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <q-input
+            v-model="newTask"
+            label="輸入要做的事"
+            outlined
+            autofocus
+            @keyup.enter="addTask"
+          />
+
+          <div class="q-mt-md">
+            <q-date v-model="newTaskDate" mask="YYYY-MM-DD" today-btn />
+          </div>
+
+          <div class="row q-gutter-sm q-mt-md">
+            <q-select
+              v-model="newTaskPriority"
+              :options="priorityOptions"
+              label="優先級"
+              outlined
+              class="col"
+            />
+            <q-btn
+              flat
+              round
+              dense
+              :icon="showReminderTime ? 'notifications_active' : 'notifications_off'"
+              :color="showReminderTime ? 'primary' : 'grey'"
+              @click="showReminderTime = !showReminderTime"
+            >
+              <q-tooltip>提醒我</q-tooltip>
+            </q-btn>
+          </div>
+
+          <div v-if="showReminderTime" class="q-mt-md">
+            <q-time
+              v-model="newTaskReminderTime"
+              format24h
+              mask="HH:mm"
+              now-btn
+            />
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="取消" v-close-popup />
+          <q-btn flat label="新增" color="primary" :disable="!newTask" @click="addTask" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- 🎯 重點待辦卡片輪播 -->
     <q-card class="q-pa-md q-mb-md">
@@ -179,6 +217,9 @@
                 :color="getPriorityColor(task.priority)"
                 :label="getPriorityLabel(task.priority)"
               />
+              <q-icon v-if="task.reminderTime" name="notifications_active" color="primary" size="sm">
+                <q-tooltip>提醒時間: {{ task.reminderTime }}</q-tooltip>
+              </q-icon>
             </q-item-label>
           </q-item-section>
 
@@ -196,8 +237,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from 'stores/user-store';
+import { Notify, Platform } from 'quasar';
 
 /** 一條待辦的型別 */
 interface Task {
@@ -206,12 +248,15 @@ interface Task {
   done: boolean;
   priority: 'high' | 'medium' | 'low';
   date: string; // 格式: YYYY-MM-DD
+  reminderTime?: string; // 格式: YYYY-MM-DD HH:MM，提醒时间
+  reminderId?: number; // 存储通知ID，用于取消通知
 }
 
 // 👤 使用者名稱管理
 const userStore = useUserStore();
 const tempName = ref('');
 const showNameDialog = ref(false);
+const showAddTaskDialog = ref(false); // 控制新增待辦事項對話框
 
 // 儲存名稱到 store
 function saveName() {
@@ -240,6 +285,8 @@ const newTask = ref(''); // 輸入框
 const newTaskPriority = ref<Task['priority']>('medium'); // 新任務優先級
 const newTaskDate = ref(getTodayDate()); // 新任務日期，默認為今天
 const slide = ref('0'); // 輪播當前頁面，從0開始表示第一頁
+const showReminderTime = ref(false); // 是否顯示提醒時間選擇器
+const newTaskReminderTime = ref(''); // 新任務提醒時間，格式: HH:mm
 
 // 獲取今天的日期，格式為 YYYY-MM-DD
 function getTodayDate(): string {
@@ -287,17 +334,84 @@ function addTask() {
   if (!title) return;
 
   const newId = Date.now(); // 用時間戳當簡單 id
-  tasks.value.push({
+  let reminderTime: string | undefined = undefined;
+  let reminderId: number | undefined = undefined;
+
+  // 如果設置了提醒時間，則設置通知
+  if (showReminderTime.value && newTaskReminderTime.value) {
+    reminderTime = `${newTaskDate.value} ${newTaskReminderTime.value}`;
+
+    // 計算提醒時間（提前一小時）
+    const reminderDateTime = new Date(reminderTime);
+    reminderDateTime.setHours(reminderDateTime.getHours() - 1);
+
+    // 設置通知
+    if (Platform.is.capacitor || Platform.is.cordova || ('Notification' in window)) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        reminderId = Date.now();
+        const notificationTime = reminderDateTime.getTime() - Date.now();
+
+        if (notificationTime > 0) {
+          setTimeout(() => {
+            if ('Notification' in window) {
+              new Notification('待辦事項提醒', {
+                body: `您有一個待辦事項「${title}」即將到期`,
+                icon: 'icons/icon-128x128.png',
+                tag: `task-${newId}`,
+                requireInteraction: true
+              });
+            }
+          }, notificationTime);
+        }
+      } else if ('Notification' in window && Notification.permission !== 'denied') {
+        // 如果尚未請求通知權限，則請求權限
+        void Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            reminderId = Date.now();
+            const notificationTime = reminderDateTime.getTime() - Date.now();
+
+            if (notificationTime > 0) {
+              setTimeout(() => {
+                if ('Notification' in window) {
+                  new Notification('待辦事項提醒', {
+                    body: `您有一個待辦事項「${title}」即將到期`,
+                    icon: 'icons/icon-128x128.png',
+                    tag: `task-${newId}`,
+                    requireInteraction: true
+                  });
+                }
+              }, notificationTime);
+            }
+          }
+        });
+      }
+    }
+  }
+
+  const newTaskData: Task = {
     id: newId,
     title,
     done: false,
     priority: newTaskPriority.value,
-    date: newTaskDate.value,
-  });
+    date: newTaskDate.value
+  };
+
+  if (reminderTime !== undefined) {
+    newTaskData.reminderTime = reminderTime;
+  }
+
+  if (reminderId !== undefined) {
+    newTaskData.reminderId = reminderId;
+  }
+
+  tasks.value.push(newTaskData);
 
   newTask.value = '';
   newTaskPriority.value = 'medium'; // 重置為預設值
   newTaskDate.value = getTodayDate(); // 重置為今天
+  newTaskReminderTime.value = ''; // 重置提醒時間
+  showReminderTime.value = false; // 隱藏提醒時間選擇器
+  showAddTaskDialog.value = false; // 關閉對話框
   sortTasks();
 
   // 如果新增的是今天的任務，自動切換到包含新任務的頁面
@@ -381,4 +495,47 @@ function removeTask(id: number) {
     }
   }, 0);
 }
+
+// 初始化通知权限
+onMounted(() => {
+  // 检查是否支持通知
+  if (Platform.is.capacitor || Platform.is.cordova || ('Notification' in window)) {
+    // 如果尚未请求通知权限，则请求权限
+    if ('Notification' in window && Notification.permission === 'default') {
+      void Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          Notify.create({
+            type: 'positive',
+            message: '通知权限已开启，您将收到待办事项提醒',
+            position: 'top',
+            timeout: 2000
+          });
+        } else if (permission === 'denied') {
+          Notify.create({
+            type: 'negative',
+            message: '您已拒绝通知权限，将无法收到待办事项提醒',
+            position: 'top',
+            timeout: 3000
+          });
+        }
+      });
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      // 如果已经授权，显示提示信息
+      Notify.create({
+        type: 'positive',
+        message: '通知权限已开启，您将收到待办事项提醒',
+        position: 'top',
+        timeout: 2000
+      });
+    }
+  } else {
+    // 浏览器不支持通知
+    Notify.create({
+      type: 'warning',
+      message: '您的浏览器不支持通知功能',
+      position: 'top',
+      timeout: 3000
+    });
+  }
+});
 </script>
