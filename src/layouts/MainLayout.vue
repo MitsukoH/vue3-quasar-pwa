@@ -1,7 +1,7 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar :class="$q.dark.isActive ? 'custom-dark ' : 'custom-light '">
+  <q-layout view="hHh Lpr lFf">
+    <q-header elevated class="full-width">
+      <q-toolbar class="glossy" :class="$q.dark.isActive ? 'custom-dark ' : 'custom-light '">
         <q-toolbar-title> Hello Worga!! </q-toolbar-title>
 
         <q-btn
@@ -18,26 +18,30 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" bordered show-if-above :mini="miniState" @mouseover="miniState = false" @mouseout="miniState = true">
+    <q-drawer
+      bordered
+      show-if-above
+      :width="250"
+      :breakpoint="0"
+      persistent
+      :no-swipe-open="true"
+      :no-swipe-close="true"
+    >
       <q-list>
-        <!-- <q-item-label header>  </q-item-label> -->
+        <q-item-label header>聯繫方式 </q-item-label>
 
         <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
       </q-list>
     </q-drawer>
 
     <q-page-container>
-      <WeatherAnimation />
       <router-view />
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
-import WeatherAnimation from 'components/WeatherAnimation.vue';
-
 const linksList: EssentialLinkProps[] = [
   {
     title: 'E-mail',
@@ -52,9 +56,6 @@ const linksList: EssentialLinkProps[] = [
     link: 'https://github.com/MitsukoH',
   },
 ];
-
-const leftDrawerOpen = ref(true);
-const miniState = ref(true);
 </script>
 <style scoped>
 .custom-dark {

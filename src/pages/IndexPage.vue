@@ -1,5 +1,14 @@
 <template>
-  <!-- 整頁容器，灰底看起來比較不那麼陽春 -->
+  <div
+    class="w-full flex flex-row justify-around q-pa-md"
+    padding
+    :class="$q.dark.isActive ? 'bg-gray-9' : 'bg-grey-2'"
+  >
+    <div class="p-4 bg-gray-5 rounded-borders shadow-lg">
+      <WeatherAnimation />
+    </div>
+    <!-- <div class="p-4">全台天氣預報</div> -->
+  </div>
   <q-page padding :class="$q.dark.isActive ? 'bg-gray-9' : 'bg-grey-2'">
     <!-- 🌅 問候區 -->
     <div class="row items-center q-mb-xs">
@@ -38,12 +47,7 @@
 
     <!-- ✅ 新增待辦事項按鈕 -->
     <div class="row justify-center q-mb-md">
-      <q-btn
-        color="primary"
-        icon="add"
-        label="新增待辦事項"
-        @click="showAddTaskDialog = true"
-      />
+      <q-btn color="primary" icon="add" label="新增待辦事項" @click="showAddTaskDialog = true" />
     </div>
 
     <!-- 📝 新增待辦事項對話框 -->
@@ -87,12 +91,7 @@
           </div>
 
           <div v-if="showReminderTime" class="q-mt-md">
-            <q-time
-              v-model="newTaskReminderTime"
-              format24h
-              mask="HH:mm"
-              now-btn
-            />
+            <q-time v-model="newTaskReminderTime" format24h mask="HH:mm" now-btn />
           </div>
         </q-card-section>
 
@@ -217,7 +216,12 @@
                 :color="getPriorityColor(task.priority)"
                 :label="getPriorityLabel(task.priority)"
               />
-              <q-icon v-if="task.reminderTime" name="notifications_active" color="primary" size="sm">
+              <q-icon
+                v-if="task.reminderTime"
+                name="notifications_active"
+                color="primary"
+                size="sm"
+              >
                 <q-tooltip>提醒時間: {{ task.reminderTime }}</q-tooltip>
               </q-icon>
             </q-item-label>
@@ -240,6 +244,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from 'stores/user-store';
 import { Notify, Platform } from 'quasar';
+import WeatherAnimation from 'components/WeatherAnimation.vue';
 
 /** 一條待辦的型別 */
 interface Task {
@@ -346,7 +351,7 @@ function addTask() {
     reminderDateTime.setHours(reminderDateTime.getHours() - 1);
 
     // 設置通知
-    if (Platform.is.capacitor || Platform.is.cordova || ('Notification' in window)) {
+    if (Platform.is.capacitor || Platform.is.cordova || 'Notification' in window) {
       if ('Notification' in window && Notification.permission === 'granted') {
         reminderId = Date.now();
         const notificationTime = reminderDateTime.getTime() - Date.now();
@@ -358,14 +363,14 @@ function addTask() {
                 body: `您有一個待辦事項「${title}」即將到期`,
                 icon: 'icons/icon-128x128.png',
                 tag: `task-${newId}`,
-                requireInteraction: true
+                requireInteraction: true,
               });
             }
           }, notificationTime);
         }
       } else if ('Notification' in window && Notification.permission !== 'denied') {
         // 如果尚未請求通知權限，則請求權限
-        void Notification.requestPermission().then(permission => {
+        void Notification.requestPermission().then((permission) => {
           if (permission === 'granted') {
             reminderId = Date.now();
             const notificationTime = reminderDateTime.getTime() - Date.now();
@@ -377,7 +382,7 @@ function addTask() {
                     body: `您有一個待辦事項「${title}」即將到期`,
                     icon: 'icons/icon-128x128.png',
                     tag: `task-${newId}`,
-                    requireInteraction: true
+                    requireInteraction: true,
                   });
                 }
               }, notificationTime);
@@ -393,7 +398,7 @@ function addTask() {
     title,
     done: false,
     priority: newTaskPriority.value,
-    date: newTaskDate.value
+    date: newTaskDate.value,
   };
 
   if (reminderTime !== undefined) {
@@ -499,23 +504,23 @@ function removeTask(id: number) {
 // 初始化通知权限
 onMounted(() => {
   // 检查是否支持通知
-  if (Platform.is.capacitor || Platform.is.cordova || ('Notification' in window)) {
+  if (Platform.is.capacitor || Platform.is.cordova || 'Notification' in window) {
     // 如果尚未请求通知权限，则请求权限
     if ('Notification' in window && Notification.permission === 'default') {
-      void Notification.requestPermission().then(permission => {
+      void Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
           Notify.create({
             type: 'positive',
             message: '通知权限已开启，您将收到待办事项提醒',
             position: 'top',
-            timeout: 2000
+            timeout: 2000,
           });
         } else if (permission === 'denied') {
           Notify.create({
             type: 'negative',
             message: '您已拒绝通知权限，将无法收到待办事项提醒',
             position: 'top',
-            timeout: 3000
+            timeout: 3000,
           });
         }
       });
@@ -525,7 +530,7 @@ onMounted(() => {
         type: 'positive',
         message: '通知权限已开启，您将收到待办事项提醒',
         position: 'top',
-        timeout: 2000
+        timeout: 2000,
       });
     }
   } else {
@@ -534,7 +539,7 @@ onMounted(() => {
       type: 'warning',
       message: '您的浏览器不支持通知功能',
       position: 'top',
-      timeout: 3000
+      timeout: 3000,
     });
   }
 });
