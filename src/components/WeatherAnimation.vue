@@ -108,7 +108,7 @@ const getBrowserLocation = (): Promise<GpsLocation> => {
       },
       (err) => {
         console.warn('⚠️ GPS 失敗：', err);
-        reject(err);
+        reject(new Error(err.message || 'GPS 定位失敗'));
       },
       {
         enableHighAccuracy: true,
@@ -202,6 +202,8 @@ const fetchWeather = async () => {
       if (!coordList || coordList.length === 0) return;
 
       const coord = coordList[0];
+      if (!coord) return;
+
       const lat = Number(coord.StationLatitude);
       const lon = Number(coord.StationLongitude);
 
@@ -218,7 +220,11 @@ const fetchWeather = async () => {
     // 如果真的一個都有問題，就退而求其次找臺中市的測站
     if (!nearest) {
       console.warn('⚠️ 找不到有座標的測站，改用臺中市測站作為預設');
-      nearest = stations.find((s) => s.GeoInfo.CountyName === '臺中市') ?? stations[0];
+      const fallbackStation = stations[0];
+      if (!fallbackStation) {
+        throw new Error('無法取得可用的測站資料');
+      }
+      nearest = stations.find((s) => s.GeoInfo.CountyName === '臺中市') ?? fallbackStation;
     }
 
     // 這裡一定要再檢查一下
